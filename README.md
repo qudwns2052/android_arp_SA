@@ -1,6 +1,6 @@
 ## 안드로이드 (CA) 주소
 
-https://github.com/qudwns2052/android_arp
+https://github.com/qudwns2052/android_arp_CA
 
 ## 현재 상황
 
