@@ -1,0 +1,73 @@
+{\rtf1\ansi\ansicpg949\cocoartf2512
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset129 AppleSDGothicNeo-Bold;\f1\fnil\fcharset0 HelveticaNeue;\f2\fnil\fcharset0 HelveticaNeue-Bold;
+\f3\fnil\fcharset129 AppleSDGothicNeo-Regular;}
+{\colortbl;\red255\green255\blue255;\red38\green38\blue38;\red255\green255\blue255;}
+{\*\expandedcolortbl;;\cssrgb\c20000\c20000\c20000;\cssrgb\c100000\c100000\c100000;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww33100\viewh19280\viewkind0
+\deftab720
+\pard\pardeftab720\sa256\partightenfactor0
+
+\f0\b\fs60 \cf2 \cb3 \expnd0\expndtw0\kerning0
+Libpcap MAC (\'bf\'cf\'ba\'ae X clang\'c0\'b8\'b7\'ce \'c5\'b8\'b0\'d9 \'c0\'e2\'b0\'ed \'bc\'f6\'c1\'a4\'c7\'cf\'b8\'e9 \'b5\'c9\'b5\'ed)
+\f1\b0\fs32 \
+export ANDROID_NDK_HOST=darwin-x86_64 \
+export ANDROID_NDK_PLATFORM=android-16\
+export ANDROID_NDK_ROOT=/Users/goka/androidndk \
+export TOOLCHAIN=/Users/goka/android/ndk/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64 \
+export PATH=/Users/goka/android/ndk/toolchains/llvm/prebuilt/darwin-x86_64/bin:$TOOLCHAIN/bin:$PATH \
+export CC=armv7a-linux-androideabi16-clang \
+export CXX=armv7a-linux-androideabi16-clang++ \
+export AR=$TOOLCHAIN/bin/arm-linux-androideabi-ar \
+export AS=$TOOLCHAIN/bin/arm-linux-androideabi-as \
+export LD=$TOOLCHAIN/bin/arm-linux-androideabi-ld \
+export RANLIB=$TOOLCHAIN/bin/arm-linux-androideabi-ranlib \
+export STRIP=$TOOLCHAIN/bin/arm-linux-androideabi-strip\
+\
+./configure --prefix=$PWD/../sysroot --host=arm-linux --enable-shared=no --with-pcap=linux --without-libnl\
+make\
+make install\
+\
+
+\f2\b\fs60 makefile 
+\f0 \'bf\'b9\'bd\'c3
+\f2 \
+
+\f1\b0\fs32 TARGET	=pcap_socket\
+SRCS	=$(wildcard *.cpp)\
+OBJECTS	=$(SRCS:.cpp=.o)\
+\
+CPPFLAGS+=-I/Users/goka/android/sysroot/include\
+LDFLAGS+=-L/Users/goka/android/sysroot/lib\
+LDFLAGS+=-pie\
+LDLIBS+=-lpcap\
+\
+\
+$(TARGET) : $(OBJECTS)\
+	$(CXX) $(LDFLAGS) $(TARGET_ARCH) $(OBJECTS) $(LDLIBS) -o $(TARGET)\
+\
+\
+pcap_socket.o : pcap_socket.cpp\
+arp.o : arp.cpp\
+\
+clean:\
+	rm -f $(TARGET)\
+	rm -f *.o\
+\
+
+\fs60 android.profile 
+\f3 \'bf\'b9\'bd\'c3
+\f1 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\fs32 \cf2 function addPath \{\
+  case ":$PATH:" in\
+    *":$1:"*) :;; # already there\
+    *) PATH="$1:$PATH";; # or PATH="$PATH:$1"\
+  esac\
+\}\
+\
+addPath /Users/goka/android/ndk/toolchains/llvm/prebuilt/darwin-x86_64/bin\
+export CC=clang\
+export CXX=clang++\
+export TARGET_ARCH="-target armv7a-linux-androideabi16"\
+}
