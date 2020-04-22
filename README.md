@@ -2,6 +2,14 @@
 
 https://github.com/qudwns2052/android_arp_CA
 
+## 1차 시연 영상
+
+https://youtu.be/5efd3ipAbrU
+
+## 2차 시연 영상
+
+https://youtu.be/PCyZTQGiibA
+
 ## 현재 상황
 
 1. CA -> Connect button click : socket c server와 연결함
@@ -20,28 +28,8 @@ https://github.com/qudwns2052/android_arp_CA
 
 8. RA -> 7을 통해 만들어진 패킷을 Broadcast로 주기적으로 전송
 
+## 200422 추가사항
 
+RA : thread 적용 
 
-### 할 일들
-
-CA
-
-\- 버튼 재 클릭시 ARP reply 멈추는 기능 추가
-
-\- Exit 버튼 추가
-
-\- RA 실행시켜주고 자동으로 꺼주기
-
-
-
-RA
-
-\- 코드 깔끔하게 수정
-
-\- 필요한 부분 추가 + 불필요한 부분 제거
-
-
-
-CA & RA
-
-\- protocol 정하기
+CA : GUI 수정

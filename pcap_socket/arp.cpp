@@ -1,6 +1,6 @@
 #include "arp.h"
 
-void Arp::setArp(char * dev)
+void Arp::setArp(char *dev)
 {
     struct ether_header *eth_rep = (struct ether_header *)(packet);
     struct arp_header *arp_rep = (struct arp_header *)(packet + ETH_HEADER_SIZE);
@@ -15,9 +15,17 @@ void Arp::setArp(char * dev)
 
     char notuse[20];
 
-    printf("get my info \n");
-
     get_my_info(dev, subnet, my_ip, my_mac);
+
+    char subnet_str[1024];
+    char ip_str[1024];
+    char mac_str[1024];
+
+    sprintf(subnet_str, "subnet = %d.%d.%d.%d", subnet[0], subnet[1], subnet[2], subnet[3]);
+    sprintf(ip_str, "%ip = d.%d.%d.%d", my_ip[0], my_ip[1], my_ip[2], my_ip[3]);
+    sprintf(mac_str, "mac = %02X:%02X:%02X:%02X:%02X:%02X", my_mac[0], my_mac[1], my_mac[2], my_mac[3], my_mac[4], my_mac[5]);
+
+    printf("%s\n%s\n%s\n\n", subnet_str, ip_str, mac_str);
 
     memcpy(ap_ip, my_ip, 4);
 
@@ -48,29 +56,6 @@ void Arp::setArp(char * dev)
     memcpy(result, packet, 50);
 
     printf("set arp OK\n");
-}
-void Arp::sendArp()
-{
-
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t *handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
-
-    if (handle == NULL)
-    {
-        return;
-    }
-
-    pcap_sendpacket(handle, result, ETH_HEADER_SIZE + ARP_HEADER_SIZE);
-    pcap_close(handle);
-
-    // 패킷 값 변조 확인
-    // for (int i = 0; i < ETH_HEADER_SIZE + ARP_HEADER_SIZE; i++)
-    // {
-    //     if (i % 16 == 0)
-    //         printf("\n");
-    //     printf("%02x ", result[i]);
-    // }
-
 }
 
 void get_my_info(char *dev, uint8_t *subnet, uint8_t *ip, uint8_t *mac)
