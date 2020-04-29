@@ -36,5 +36,6 @@ public:
     void setArp(char * dev);
 };
 
+bool check_dev(char * dev);
 void get_my_info(char *dev, uint8_t *subnet, uint8_t *ip, uint8_t *mac);
 #endif // ARP_H

@@ -33,3 +33,9 @@ https://youtu.be/PCyZTQGiibA
 RA : thread 적용 
 
 CA : GUI 수정
+
+## 200429 추가사항
+
+CA : GUI 수정
+
+RA : 코드 수정

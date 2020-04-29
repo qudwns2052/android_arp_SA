@@ -15,6 +15,8 @@ void Arp::setArp(char *dev)
 
     char notuse[20];
 
+    //
+    
     get_my_info(dev, subnet, my_ip, my_mac);
 
     char subnet_str[1024];
@@ -22,7 +24,7 @@ void Arp::setArp(char *dev)
     char mac_str[1024];
 
     sprintf(subnet_str, "subnet = %d.%d.%d.%d", subnet[0], subnet[1], subnet[2], subnet[3]);
-    sprintf(ip_str, "%ip = d.%d.%d.%d", my_ip[0], my_ip[1], my_ip[2], my_ip[3]);
+    sprintf(ip_str, "ip = %d.%d.%d.%d", my_ip[0], my_ip[1], my_ip[2], my_ip[3]);
     sprintf(mac_str, "mac = %02X:%02X:%02X:%02X:%02X:%02X", my_mac[0], my_mac[1], my_mac[2], my_mac[3], my_mac[4], my_mac[5]);
 
     printf("%s\n%s\n%s\n\n", subnet_str, ip_str, mac_str);
@@ -58,6 +60,24 @@ void Arp::setArp(char *dev)
     printf("set arp OK\n");
 }
 
+bool check_dev(char * dev)
+{
+    int fd;
+    struct ifreq ifr;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    ifr.ifr_addr.sa_family = AF_INET;
+
+    strncpy(ifr.ifr_name, dev, IFNAMSIZ - 1);
+
+    if(ioctl(fd, SIOCGIFADDR, &ifr) < 0)
+        return false;
+    
+    return true;    
+
+}
+
 void get_my_info(char *dev, uint8_t *subnet, uint8_t *ip, uint8_t *mac)
 {
 
@@ -72,9 +92,11 @@ void get_my_info(char *dev, uint8_t *subnet, uint8_t *ip, uint8_t *mac)
     strncpy(ifr.ifr_name, dev, IFNAMSIZ - 1);
 
     ioctl(fd, SIOCGIFNETMASK, &ifr);
+
     memcpy(subnet, &((((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr), 4);
 
     ioctl(fd, SIOCGIFADDR, &ifr);
+
     memcpy(ip, &((((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr), 4);
 
     close(fd);

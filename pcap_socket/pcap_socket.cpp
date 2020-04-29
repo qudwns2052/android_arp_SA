@@ -17,7 +17,6 @@ void error_handler(void)
     exit(1);
 }
 
-
 int main(int argc, char *argv[])
 {
     signal(SIGINT, signal_handler);
@@ -26,7 +25,7 @@ int main(int argc, char *argv[])
     char data[BUF_SIZE];
     struct sockaddr_in server_addr, client_addr; // socket address
     socklen_t addr_size = sizeof(client_addr);
-    uint16_t server_port = 25164;   // set server port
+    uint16_t server_port = 25164; // set server port
     int read_size;
     int option = 1;
 
@@ -35,8 +34,6 @@ int main(int argc, char *argv[])
     pcap_if_t *temp;
 
     std::list<Interface> intfList;
-
-
 
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) // make server socket
     {
@@ -66,87 +63,83 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    Arp * arp = new Arp;
+    Arp *arp = new Arp;
+
+    printf("wait accept...\n");
+
+    if ((client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_size)) < 0) // accept
+    {
+        close(server_fd);
+        exit(1);
+    }
+
+    printf("connection ok!\n");
+
+    if (pcap_findalldevs(&all, error) == -1)
+    {
+        printf("error in pcap_findalldevs(%s)\n", error);
+        return -1;
+    }
+
+    memset(data, 0x00, sizeof(data));
+
+    for (temp = all; temp; temp = temp->next)
+    {
+        if (check_dev(temp->name))
+        {
+            strcat(temp->name, ",");
+            strcat(data, temp->name);
+        }
+    }
+
+    if (write(client_fd, data, strlen(data)) < 0) // send data
+        error_handler();
+
+    printf("send interface list\n");
 
     while (1)
     {
-    
-        printf("wait accept...\n");
 
-        if ((client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_size)) < 0) // accept
+        memset(buf, 0x00, sizeof(buf));
+
+        if ((read_size = read(client_fd, buf, BUF_SIZE)) <= 0) // recv data
+            error_handler();
+
+        if (strcmp(buf, "exit") == 0)
         {
-            close(server_fd);
-            exit(1);
+            break;
         }
-
-        printf("connection ok!\n");
-
-        while (1)
+        else
         {
+            std::list<Interface>::iterator iter = intfList.begin();
 
-            memset(buf, 0x00, sizeof(buf));
-
-            if ((read_size = read(client_fd, buf, BUF_SIZE)) <= 0) // recv data
-                error_handler();
-
-            if (strcmp(buf, "1") == 0)
+            while (iter != intfList.end())
             {
-                if (pcap_findalldevs(&all, error) == -1)
-                {
-                    printf("error in pcap_findalldevs(%s)\n", error);
-                    return -1;
-                }
-
-                memset(data, 0x00, sizeof(data));
-
-                for (temp = all; temp; temp = temp->next)
-                {
-                    strcat(temp->name, ",");
-                    strcat(data, temp->name);
-                }
-
-                if (write(client_fd, data, strlen(data)) < 0) // send data
-                    error_handler();
-
-                printf("send interface list\n");
+                if (strcmp(iter->intfName, buf) == 0)
+                    break;
+                iter++;
             }
-            else if (strcmp(buf, "2") == 0)
+
+            if (iter != intfList.end())
             {
-                break;
+                printf("find (interface = %s)\n", iter->intfName);
+                if (iter->onThread == true)
+                    iter->stopThread();
+                else
+                    iter->startThread();
             }
             else
             {
-                std::list<Interface>::iterator iter = intfList.begin();
-
-                while(iter != intfList.end())
-                {
-                    if(strcmp(iter->intfName, buf) == 0)
-                        break;
-                    iter++;
-                }
-
-
-                if(iter != intfList.end())
-                {
-                    printf("find (interface = %s)\n", iter->intfName);
-                    if(iter->onThread == true)
-                        iter->stopThread();
-                    else
-                        iter->startThread();
-                }
-                else
-                {
-                    printf("append Interface class (interface = %s)\n", buf);
-                    arp->setArp(buf);
-                    intfList.push_back(Interface(buf, arp->result));
-                    intfList.back().startThread();
-                }
+                printf("append Interface class (interface = %s)\n", buf);
+                arp->setArp(buf);
+                intfList.push_back(Interface(buf, arp->result));
+                intfList.back().startThread();
             }
         }
-        close(client_fd); // close client_fd
     }
 
     delete arp;
+    close(client_fd); // close client_fd
     close(server_fd); // close server_fd
 
     return 0;
