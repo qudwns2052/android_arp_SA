@@ -25,17 +25,28 @@ void Interface::arpAttack(void)
 
     while (onThread)
     {
-        if(pcap_sendpacket(handle, packet, ETH_HEADER_SIZE + ARP_HEADER_SIZE)!=0)
+        if(pcap_sendpacket(handle, attack_packet, ETH_HEADER_SIZE + ARP_HEADER_SIZE)!=0)
         {
             printf("error\n");
         }
-        printf("%s\n", this->intfName);
 
         std::this_thread::sleep_for(std::chrono::duration<int>(1));
-        printf("send arp...\n");
+        printf("send attack arp...\n");
     }
 
     printf("thread stop (interface = %s)\n", intfName);
+
+    for(int i=0; i<3; i++)
+    {
+
+        if(pcap_sendpacket(handle, recover_packet, ETH_HEADER_SIZE + ARP_HEADER_SIZE)!=0)
+        {
+            printf("error\n");
+        }
+        
+        std::this_thread::sleep_for(std::chrono::duration<int>(1));
+        printf("send recover arp...\n");
+    }
 
     pcap_close(handle);
 }

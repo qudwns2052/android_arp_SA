@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
             {
                 printf("append Interface class (interface = %s)\n", buf);
                 arp->setArp(buf);
-                intfList.push_back(Interface(buf, arp->result));
+                intfList.push_back(Interface(buf, arp->recover_packet, arp->attack_packet));
                 intfList.back().startThread();
             }
         }

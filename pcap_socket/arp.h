@@ -21,7 +21,10 @@ class Arp
 {
 public:
     uint8_t packet[50];
-    uint8_t result[50];
+    uint8_t request_packet[50];
+    uint8_t recover_packet[50];
+    uint8_t attack_packet[50];
+
     char dev[20];
     Arp()
     {
@@ -30,12 +33,12 @@ public:
     }
     ~Arp()
     {
-
     }
 
-    void setArp(char * dev);
+    void setArp(char *dev);
+    void getGatewayMac(uint8_t * my_mac, uint8_t *gateway_mac);
 };
 
-bool check_dev(char * dev);
+bool check_dev(char *dev);
 void get_my_info(char *dev, uint8_t *subnet, uint8_t *ip, uint8_t *mac);
 #endif // ARP_H
